@@ -4,7 +4,7 @@
   "description": "A living wuxia world that writes its own history — sects, cultivators, wars and techniques, recorded by an unseen brush.",
   "lang": "en",
   "dir": "ltr",
-  "start_url": "./the-murim-chronicle.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

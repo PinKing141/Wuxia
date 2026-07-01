@@ -5,10 +5,11 @@
 
 "use strict";
 
-const CACHE = "jianghu-v1";
+const CACHE = "jianghu-v2";
 
 const PRECACHE = [
-  "./the-murim-chronicle.html",
+  "./",
+  "./index.html",
   "./styles/app.css",
   "./manifest.webmanifest",
   "./assets/logo.svg",
@@ -116,9 +117,9 @@ self.addEventListener("fetch", event=>{
   // instantly and offline; refresh it in the background.
   if(req.mode === "navigate"){
     event.respondWith(
-      caches.match("./the-murim-chronicle.html").then(cached=>{
+      caches.match("./index.html").then(cached=>{
         const network = fetch(req).then(res=>{
-          caches.open(CACHE).then(c=>c.put("./the-murim-chronicle.html", res.clone()));
+          caches.open(CACHE).then(c=>c.put("./index.html", res.clone()));
           return res;
         }).catch(()=>cached);
         return cached || network;

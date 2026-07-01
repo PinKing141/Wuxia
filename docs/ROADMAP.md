@@ -42,7 +42,7 @@ Technique version:
 - [x] Structured chronicle records with event type, importance, involved people/factions/techniques, hidden causes, consequences, known witnesses, tags, and first-class rumour entities.
 - [x] Structured conflict systems: personal insults, duels, assassinations, succession crises, romance tension, resource disputes, border skirmishes, dynastic rebellion pressure, faction wars, battles, casualties, aftermath, and war reports.
 - [x] Deep Archive observer UI with global search, indexes, clickable records, and detail reports for people, powers, techniques, wars, events, regions, relationships, and bloodlines.
-- [x] Local server smoke check returns the current app page on `http://127.0.0.1:5181/the-murim-chronicle.html`.
+- [x] Local server smoke check returns the current app page on `http://127.0.0.1:5181/index.html`.
 
 ## Phase 0: Modular Prototype
 
