@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="styles/app.css">
 </head>
 <body>
-<div class="app">
+<div class="app" data-view="chronicle">
 
   <div class="topbar">
     <div class="brand">
@@ -68,6 +68,12 @@
     <div class="panel-title">Notable Cultivators <span class="ct" id="figct">0</span></div>
     <div id="figlist"></div>
   </aside>
+
+  <nav class="mobilenav" id="mobilenav" aria-label="View switcher">
+    <button data-view="powers">☰ Powers</button>
+    <button data-view="chronicle" class="on">❧ Chronicle</button>
+    <button data-view="realm">◈ Realm</button>
+  </nav>
 
 </div>
 

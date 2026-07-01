@@ -3,6 +3,7 @@
 import { genesis } from "./generators/genesis.js";
 import { tick } from "./simulation/systems.js";
 import { bindChronicleScroll, renderLog, renderPanels } from "./ui/render.js";
+import "./ui/mobile-nav.js";
 
 const $ = id=>document.getElementById(id);
 let timer = null;
