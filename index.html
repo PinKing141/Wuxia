@@ -33,11 +33,11 @@
     </div>
     <div class="era" id="era">Year <b id="yr">1</b> · <span id="season">Spring</span> · <span id="alive">0</span> souls beneath Heaven</div>
     <div class="controls">
-      <div class="speed" id="speed">
-        <button data-s="900">▮</button>
-        <button data-s="420" class="on">▮▮</button>
-        <button data-s="160">▮▮▮</button>
-        <button data-s="40">▮▮▮▮</button>
+      <div class="speed" id="speed" role="group" aria-label="Simulation speed">
+        <button data-s="900" title="Slowest">1×</button>
+        <button data-s="420" class="on" title="Normal">2×</button>
+        <button data-s="160" title="Fast">3×</button>
+        <button data-s="40" title="Fastest">4×</button>
       </div>
       <button class="ctl" id="pause">❚❚ Pause</button>
       <button class="ctl primary" id="reseed">↻ New Age</button>
@@ -89,6 +89,21 @@
     <button data-view="realm">◈ Realm</button>
   </nav>
 
+</div>
+
+<div class="emodal" id="entityModal" hidden>
+  <div class="emodal-scrim" data-emodal-close></div>
+  <div class="emodal-card" role="dialog" aria-modal="true" aria-labelledby="emodalTitle" tabindex="-1">
+    <div class="emodal-head">
+      <button class="emodal-back" id="emodalBack" aria-label="Back" hidden>←</button>
+      <div class="emodal-heading">
+        <h2 id="emodalTitle"></h2>
+        <div class="emodal-sub" id="emodalSub"></div>
+      </div>
+      <button class="emodal-close" id="emodalClose" aria-label="Close" data-emodal-close>✕</button>
+    </div>
+    <div class="emodal-body" id="emodalBody"></div>
+  </div>
 </div>
 
 <script type="module" src="src/main.js"></script>

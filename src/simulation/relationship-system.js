@@ -1,5 +1,7 @@
 "use strict";
 
+import { realmStageName } from "../data/cultivation.js";
+import { ambitionLabel, traitLabel } from "../entities/figure.js";
 import { relationshipById, upsertRelationshipPair } from "../entities/relationship.js";
 import { addMemory, rememberEvent } from "../entities/memory.js";
 import { recordTechniqueEvent } from "../entities/technique.js";
@@ -98,7 +100,7 @@ function maybeJealousBetrayal(){
     `${ref(actor)} betrays ${ref(target)} after years of envy, stealing notes from ${target.art ? aref(target.art) : "their private cultivation commentary"}.`,
     jealousy >= 70 ? "major" : "normal",
     {
-      trueRecord:`This betrayal was selected from relationship state: envy and resentment ${Math.round(jealousy)}, actor ambition ${actor.ambitions?.[0] || "none"}, target fame ${Math.round(target.fame || 0)}, and stored bonds that made access possible.`,
+      trueRecord:`This betrayal was selected from relationship state: envy and resentment ${Math.round(jealousy)}, actor ambition ${ambitionLabel(actor.ambitions?.[0])}, target fame ${Math.round(target.fame || 0)}, and stored bonds that made access possible.`,
       knownBy:"True Record; the betrayer; possible hidden witnesses",
       causalType:"relationship",
       regionId:actor.currentRegionId || target.currentRegionId || null,
@@ -200,7 +202,7 @@ function maybeMasterFavoritism(){
     `${ref(master)} praises ${ref(favourite)} before the hall; ${ref(jealous)} lowers their head, but remembers.`,
     "normal",
     {
-      trueRecord:`Master favoritism created a succession pressure point. ${ref(favourite)} has realm ${favourite.realm}, fame ${Math.round(favourite.fame || 0)}, comprehension ${Math.round(favourite.comprehension || 0)}; ${ref(jealous)} has ambition ${jealous.ambitions?.[0] || "none"} and temperament ${jealous.personalityTraits?.[0] || "unknown"}.`,
+      trueRecord:`Master favoritism created a succession pressure point. ${ref(favourite)} has reached ${realmStageName(favourite.realm, favourite.progress, true)}, fame ${Math.round(favourite.fame || 0)}, comprehension ${Math.round(favourite.comprehension || 0)}; ${ref(jealous)} carries a ${ambitionLabel(jealous.ambitions?.[0]).toLowerCase()} ambition and a ${traitLabel(jealous.personalityTraits?.[0]).toLowerCase()} temperament.`,
       knownBy:"True Record; inner disciples",
       causalType:"relationship",
       regionId:master.currentRegionId || favourite.currentRegionId || jealous.currentRegionId || null,

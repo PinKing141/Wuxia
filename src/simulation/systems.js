@@ -15,7 +15,7 @@ import { locationName, randomLandmark, randomRegion, regionName } from "../obser
 import { aliveFigs, aliveSects, figById, sectMight, topMember, warExists } from "../observer/selectors.js";
 import { STATE } from "../state.js";
 import { alignShift, maybeName } from "./identity.js";
-import { cap, chance, clamp, pick, rand, ri } from "../utils/random.js";
+import { cap, chance, clamp, dual, pick, rand, ri } from "../utils/random.js";
 import { applyBreakthroughOutcome, breakthroughOutcomeLabel, isBreakthroughSuccess, resolveBreakthroughAttempt } from "./breakthrough-system.js";
 import { cultivationGainFor, normalizeCultivationState, tickCultivationRecovery } from "./cultivation-system.js";
 import { tickInnerDemons } from "./inner-demon-system.js";
@@ -482,7 +482,7 @@ function sysRivalryAndWar(){
         });
         const warEvent = chron(
           "c-war",
-          `${pick(["Banners rise","War drums sound","Blood is sworn"])}: ${sref(a)} and ${sref(b)} fall into open war - ${w.name} (${w.recordName}) - over ${publicCause}.`,
+          `${pick(["Banners rise","War drums sound","Blood is sworn"])}: ${sref(a)} and ${sref(b)} fall into open war — ${dual(w.name, w.recordName)} — over ${publicCause}.`,
           "major",
           {
             trueRecord:`The public cause is only the spark. The balance before war was ${Math.round(sectMight(a))} to ${Math.round(sectMight(b))}; ${sref(a)} risks ${a.weakness}, while ${sref(b)} risks ${b.weakness}.`,
@@ -522,7 +522,7 @@ function battle(A, B, pa, pb, w){
     const v = pick(victims.sort((x, y)=>x.power - y.power).slice(0, Math.ceil(victims.length / 2)));
     if(v){
       casualty = v;
-      killFigure(v, `falls in battle during ${w.name} (${w.recordName})`);
+      killFigure(v, `falls in battle during ${dual(w.name, w.recordName)}`);
     }
   }
   const cA = topMember(winner);
@@ -561,7 +561,7 @@ function endWar(w, A, B, winner, loser){
     loser.prestige -= ri(15,30);
     const endEvent = chron(
       "c-war",
-      `${w.name} (${w.recordName}) ends. ${sref(winner)} stands victorious; ${sref(loser)} is broken and humbled.`,
+      `${dual(w.name, w.recordName)} ends. ${sref(winner)} stands victorious; ${sref(loser)} is broken and humbled.`,
       "major",
       {
         trueRecord:`Victory followed accumulated might, surviving elites, and prestige loss more than righteous mandate; ${sref(loser)} now carries debts that will seed future grudges.`,

@@ -1,5 +1,13 @@
 "use strict";
 
+export function pathLabel(path){
+  return CULTIVATION_PATHS[path]?.label || path || "Unknown";
+}
+
+export function qiLabel(qiType){
+  return QI_TYPES[qiType]?.label || qiType || "unknown qi";
+}
+
 export const CULTIVATION_PATHS = {
   martial:{label:"Martial", description:"Body, fist, weapon, and inner-force training."},
   sword:{label:"Sword", description:"Sword qi, intent, and clean killing lines."},

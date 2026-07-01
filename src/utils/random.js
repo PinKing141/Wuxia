@@ -22,3 +22,13 @@ export const pick = arr=>arr[Math.floor(rand() * arr.length)];
 export const chance = p=>rand() < p;
 export const clamp = (v, lo, hi)=>Math.max(lo, Math.min(hi, v));
 export const cap = s=>s.charAt(0).toUpperCase() + s.slice(1);
+
+// "Iron Fairy (Iron Fairy)" -> "Iron Fairy"; keeps the parenthetical only
+// when the record name genuinely differs from the primary name.
+export function dual(primary, secondary){
+  const a = String(primary ?? "").trim();
+  const b = String(secondary ?? "").trim();
+  const norm = s=>s.toLowerCase().replace(/^the\s+/, "").replace(/[.,]/g, "").trim();
+  if(!b || norm(a) === norm(b)) return a;
+  return `${a} (${b})`;
+}

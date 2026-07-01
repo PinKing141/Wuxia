@@ -6,7 +6,7 @@ import { rememberEvent } from "../entities/memory.js";
 import { benefit, cause, effect, rumour } from "../observer/causality.js";
 import { chron, plainRef, ref } from "../observer/chronicle.js";
 import { STATE } from "../state.js";
-import { cap, clamp } from "../utils/random.js";
+import { cap, clamp, dual } from "../utils/random.js";
 
 export function maybeName(f, force){
   if(f.namedAt != null) return;
@@ -15,7 +15,7 @@ export function maybeName(f, force){
     f.namedAt = STATE.year;
     const event = chron(
       "c-rise",
-      `${plainRef(f)}${f.sect ? " of " + f.sect.name + " (" + f.sect.recordName + ")" : ""} has won renown across the land, now spoken of as <span class="nm">${cap(f.epithet.en)} (${f.epithet.recordName})</span>.`,
+      `${plainRef(f)}${f.sect ? " of " + dual(f.sect.name, f.sect.recordName) : ""} has won renown across the land, now spoken of as <span class="nm">${dual(cap(f.epithet.en), f.epithet.recordName)}</span>.`,
       "major",
       {
         trueRecord:`The epithet took hold because realm ${f.realm}, fame ${Math.round(f.fame)}, and ${f.sect ? "faction rumor networks" : "wanderer gossip"} aligned at the same moment.`,
