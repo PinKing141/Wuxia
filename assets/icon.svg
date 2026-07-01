@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="The Jianghu Chronicle">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0d178"/>
+      <stop offset=".5" stop-color="#c9a227"/>
+      <stop offset="1" stop-color="#9a781b"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#1e1b13"/>
+      <stop offset="1" stop-color="#0c0b08"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="46%" r="55%">
+      <stop offset="0" stop-color="#e8c560" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#e8c560" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- full-bleed background (maskable-safe) -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- emblem, centred within the maskable safe zone -->
+  <g transform="translate(256,256) scale(3.5) translate(-64,-62)">
+    <circle cx="64" cy="62" r="50" fill="url(#glow)"/>
+    <path d="M92 24 A48 48 0 1 1 44 20" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="64" cy="64" r="40" fill="none" stroke="#c9a227" stroke-opacity=".35" stroke-width="1"/>
+    <path d="M30 92 L48 70 L58 80 L74 58 L98 92 Z" fill="url(#gold)" opacity=".85"/>
+    <path d="M64 20 L69 66 L64 72 L59 66 Z" fill="url(#gold)"/>
+    <line x1="64" y1="28" x2="64" y2="64" stroke="#7a5e12" stroke-width="1" opacity=".5"/>
+    <rect x="49" y="64.5" width="30" height="4.5" rx="2.2" fill="url(#gold)"/>
+    <rect x="61" y="70" width="6" height="18" rx="2" fill="url(#gold)"/>
+    <circle cx="64" cy="90" r="4.6" fill="url(#gold)"/>
+    <circle cx="90" cy="40" r="6.5" fill="#a3392f"/>
+    <circle cx="90" cy="40" r="6.5" fill="none" stroke="#e8c560" stroke-opacity=".45" stroke-width="1"/>
+  </g>
+</svg>
