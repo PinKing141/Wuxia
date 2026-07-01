@@ -1,0 +1,21 @@
+{
+  "name": "The Jianghu Chronicle",
+  "short_name": "Jianghu",
+  "description": "A living wuxia world that writes its own history — sects, cultivators, wars and techniques, recorded by an unseen brush.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./the-murim-chronicle.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#100f0c",
+  "theme_color": "#100f0c",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "assets/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "assets/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "assets/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "assets/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}
