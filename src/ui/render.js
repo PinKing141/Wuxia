@@ -70,8 +70,19 @@ export function renderLog(force=false){
   renderDeepArchive();
 }
 
-function bar(v, max, color){
-  return `<div class="mini"><i style="width:${clamp(v / max * 100, 0, 100)}%;background:${color}"></i></div>`;
+function bar(v, max, color, label){
+  const title = label ? `${label}: ${Math.round(v)}` : `${Math.round(v)}`;
+  return `<div class="mini" title="${title}"><i style="width:${clamp(v / max * 100, 0, 100)}%;background:${color}"></i></div>`;
+}
+
+// In-world phrasing for goal progress, instead of a gamey percentage.
+function progressWord(pct){
+  const p = Math.round(pct || 0);
+  if(p >= 90) return "all but achieved";
+  if(p >= 70) return "close at hand";
+  if(p >= 45) return "well underway";
+  if(p >= 20) return "taking shape";
+  return "barely begun";
 }
 
 export function renderPanels(){
@@ -99,7 +110,7 @@ export function renderPanels(){
     const lead = topMember(s);
     const leader = figById(s.leaderId) || lead;
     const successor = figById(s.successorId);
-    const goals = (s.currentGoals || []).slice(0,2).map(goal=>`${goal.label} ${Math.round(goal.progress || 0)}%`).join(" · ") || "No formal goal";
+    const goals = (s.currentGoals || []).slice(0,2).map(goal=>`${goal.label} <i class="prog">(${progressWord(goal.progress)})</i>`).join(" · ") || "No formal goal";
     const div = document.createElement("div");
     div.className = "sect" + (s.alive ? "" : " dead");
     div.dataset.archiveType = "factions";
@@ -127,6 +138,7 @@ export function renderPanels(){
     `;
     sl.appendChild(div);
   }
+  if(!sl.children.length) sl.innerHTML = `<div class="empty-record">No powers yet stand recorded beneath Heaven.</div>`;
 
   const fl = $("figlist");
   const figs = aliveFigs().sort((a, b)=>(b.isThreat - a.isThreat) || (b.power - a.power)).slice(0,12);
@@ -141,34 +153,29 @@ export function renderPanels(){
     div.dataset.archiveId = f.id;
     div.style.setProperty("--c", al.c);
     const named = f.epithet && f.namedAt != null;
-    const traits = (f.personalityTraits || []).slice(0,2).map(traitLabel).join(", ") || "Unrecorded";
     const ambition = ambitionLabel(f.ambitions?.[0]);
     const fear = fearLabel(f.fears?.[0]);
     const gender = f.gender ? f.gender[0].toUpperCase() + f.gender.slice(1) : "Unknown";
     const hotBond = relationshipReportFor(f)[0];
-    const artReport = f.art ? techniqueLineageReport(f.art) : null;
     div.innerHTML = `
       <div class="fig-name">${named ? `<span class="fig-alias">${dual(cap(f.epithet.en), f.epithet.recordName)}</span>` : f.name}</div>
       <div class="fig-sub">${named ? f.name + " · " : ""}${al.label}${f.isThreat ? ` · <span style="color:var(--blood)">SON OF THE ABYSS</span>` : ""}${f.sect ? " · " + f.sect.name : " · Wanderer"}</div>
-      <div class="fig-sub">${gender} · ${cap(f.publicIdentity || f.rankInFaction || "Unrecorded identity")}</div>
-      <div class="fig-sub">${pathLabel(f.path)} · ${qiLabel(f.qiType)} · ${regionName(f.currentRegionId)}</div>
-      <div class="fig-sub">Traits: ${traits}</div>
+      <div class="fig-sub">${gender} · ${cap(f.publicIdentity || f.rankInFaction || "Unrecorded identity")} · ${regionName(f.currentRegionId)}</div>
+      <div class="fig-sub">${pathLabel(f.path)} · ${qiLabel(f.qiType)}</div>
       <div class="fig-sub">Wants: ${ambition} · Fears: ${fear}</div>
-      <div class="fig-sub">Foundation ${Math.round(f.foundationQuality || 0)} · Qi ${Math.round(f.qiPurity || 0)} · Mind ${Math.round(f.mentalState || 0)} · Resources ${Math.round(f.resources || 0)}</div>
       <span class="fig-realm">${realmStageName(f.realm, f.progress)} · ${Math.round(f.progress)}%</span>
       <div class="fig-bars">
-        <span>Power</span>${bar(f.power, 1100, al.c)}
-        <span>Fame</span>${bar(f.fame, 60, "var(--gold)")}
-        <span>Abyss</span>${bar(f.alignmentDrift, 100, "var(--heretical)")}
+        <span>Power <b>${Math.round(f.power)}</b></span>${bar(f.power, 1100, al.c, "Power")}
+        <span>Fame <b>${Math.round(f.fame)}</b></span>${bar(f.fame, 60, "var(--gold)", "Fame")}
+        <span>Abyss <b>${Math.round(f.alignmentDrift)}</b></span>${bar(f.alignmentDrift, 100, "var(--heretical)", "Abyssal drift")}
       </div>
-      <div class="fig-sub">Reputation: ${cap(f.reputation?.label || "obscure")} · Pill toxicity ${Math.round(f.pillToxicity || 0)} · Inner demon ${Math.round(f.innerDemon || 0)} · Injuries ${f.injuries?.length || 0}</div>
-      <div class="fig-sub">Memories ${f.memories?.length || 0} · Bonds ${f.relationships?.length || 0} · Breakthrough records ${f.breakthroughHistory?.length || 0}</div>
-      ${hotBond ? `<div class="fig-sub">Strongest bond: ${hotBond.otherName} · ${hotBond.type} · heat ${Math.round(relationshipHeat(hotBond))}</div>` : ""}
-      ${f.art ? `<div class="fig-sub" style="margin-top:6px">${dual(f.art.name, f.art.recordName)} · ${f.art.grade} ${f.art.type} · tier ${f.art.tier} · ${pathLabel(f.art.path)} · ${qiLabel(f.art.qiType)}</div>` : ""}
-      ${artReport ? `<div class="fig-sub">Technique lineage: holders ${artReport.currentHolders.length} · past ${artReport.pastHolders.length} · branches ${artReport.childTechniques.length} · history ${artReport.history.length}</div>` : ""}
+      ${hotBond ? `<div class="fig-sub">Strongest bond: ${hotBond.otherName} · ${hotBond.type}</div>` : ""}
+      ${f.art ? `<div class="fig-sub art-line">${dual(f.art.name, f.art.recordName)} · ${f.art.grade} ${f.art.type}</div>` : ""}
+      <div class="fig-more">Open dossier →</div>
     `;
     fl.appendChild(div);
   }
+  if(!fl.children.length) fl.innerHTML = `<div class="empty-record">No cultivators of note walk the land yet.</div>`;
 }
 
 function renderRegions(){
@@ -188,10 +195,10 @@ function renderRegions(){
       <div class="sect-meta"><span>Dominant: <b>${dominant ? dominant.recordName : "Unclaimed"}</b></span></div>
       <div class="sect-meta"><span>Known for: ${region.knownFor.slice(0,3).map(cap).join(", ")}</span></div>
       <div class="region-bars">
-        <span>Stable</span>${bar(region.stability, 100, "var(--jade)")}
-        <span>Danger</span>${bar(region.danger, 100, "var(--blood)")}
-        <span>Spirit</span>${bar(region.spiritualDensity, 100, "var(--azure)")}
-        <span>Demonic</span>${bar(region.demonicActivity, 100, "var(--heretical)")}
+        <span>Stable <b>${Math.round(region.stability)}</b></span>${bar(region.stability, 100, "var(--jade)", "Stability")}
+        <span>Danger <b>${Math.round(region.danger)}</b></span>${bar(region.danger, 100, "var(--blood)", "Danger")}
+        <span>Spirit <b>${Math.round(region.spiritualDensity)}</b></span>${bar(region.spiritualDensity, 100, "var(--azure)", "Spiritual density")}
+        <span>Demonic <b>${Math.round(region.demonicActivity)}</b></span>${bar(region.demonicActivity, 100, "var(--heretical)", "Demonic activity")}
       </div>
     `;
     list.appendChild(div);

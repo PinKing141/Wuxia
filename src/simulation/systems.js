@@ -796,7 +796,7 @@ function sysLostAndFound(){
 }
 
 function loseArt(a, why){
-  const event = chron("c-lost", `${aref(a)} is lost to time - ${why}.`, "normal");
+  const event = chron("c-lost", `${aref(a)} is lost to time — ${why}.`, "normal");
   a.lostYear = STATE.year;
   loseTechnique(a, why, event);
 }
@@ -959,7 +959,7 @@ function sysHeroicArcs(){
             }
           }),
           ()=>({
-            html:`A bitter duel: ${ref(a)} defeats ${ref(b)} atop ${pick(["Sword-Testing Cliff","the Frozen Pavilion","Lone Goose Peak","the Drunken Bridge"])}, sparing their life - and earning a lifelong grudge.`,
+            html:`A bitter duel: ${ref(a)} defeats ${ref(b)} atop ${pick(["Sword-Testing Cliff","the Frozen Pavilion","Lone Goose Peak","the Drunken Bridge"])}, sparing their life — and earning a lifelong grudge.`,
             causalType:"grudge",
             causes:[
               cause("Pride", "Public challenge", `${ref(b)} could not ignore ${ref(a)} without losing face.`),
@@ -1042,7 +1042,7 @@ function sysHeroicArcs(){
             }
           }),
           ()=>({
-            html:`Rumour spreads that ${ref(a)} has fallen in love with ${ref(b)} - a romance the sects forbid.`,
+            html:`Rumour spreads that ${ref(a)} has fallen in love with ${ref(b)} — a romance the sects forbid.`,
             causalType:"relationship",
             causes:[
               cause("Affinity", "Forbidden closeness", "Faction boundaries made the attachment politically dangerous."),

@@ -64,7 +64,8 @@
     text-shadow:0 0 18px rgba(201,162,39,.25);
   }
   .brand .subtitle{font-family:'Cormorant Garamond',serif;color:var(--ink-dim);font-size:18px;letter-spacing:.14em}
-  .era{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim);letter-spacing:.08em}
+  .era{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim);letter-spacing:.08em;
+    flex:1 1 auto;min-width:0;text-align:center;line-height:1.45;padding:0 14px}
   .era b{color:var(--gold);font-weight:500}
 
   .controls{display:flex;align-items:center;gap:10px}
@@ -444,3 +445,27 @@
     .emodal-body{padding-bottom:40px}
   }
   @keyframes emodal-up{from{transform:translateY(100%)}to{transform:none}}
+
+  /* ============ WAVE 2 POLISH ============ */
+  /* Clickable cards get a consistent hover lift + pointer cue */
+  .figcard,.region-card{cursor:pointer;transition:border-color .15s,transform .15s,background .15s}
+  .figcard:hover,.region-card:hover{border-color:#534a30;transform:translateX(2px);background:#1a180f}
+  .sect:focus-visible,.figcard:focus-visible,.region-card:focus-visible,
+  .archive-row:focus-visible,.record-tab:focus-visible,.entry:focus-visible{
+    outline:2px solid var(--gold);outline-offset:2px;
+  }
+
+  /* "Open dossier" affordance on figure cards */
+  .fig-more{
+    font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-faint);margin-top:9px;opacity:.55;transition:.15s;
+  }
+  .figcard:hover .fig-more{opacity:1;color:var(--gold)}
+
+  /* Numeric readouts on bars + softened goal phrasing */
+  .fig-bars span b,.region-bars span b{
+    color:var(--ink-dim);font-weight:500;font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  }
+  .mini{cursor:help}
+  .sect-meta .prog{font-style:italic;color:var(--ink-faint)}
+  .fig-sub.art-line{color:var(--ink-dim);margin-top:6px}
