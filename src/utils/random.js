@@ -23,6 +23,9 @@ export const chance = p=>rand() < p;
 export const clamp = (v, lo, hi)=>Math.max(lo, Math.min(hi, v));
 export const cap = s=>s.charAt(0).toUpperCase() + s.slice(1);
 
+// Rounded integer with thousands separators, e.g. 6577 -> "6,577".
+export const num = n=>Math.round(n || 0).toLocaleString("en-US");
+
 // "Iron Fairy (Iron Fairy)" -> "Iron Fairy"; keeps the parenthetical only
 // when the record name genuinely differs from the primary name.
 export function dual(primary, secondary){

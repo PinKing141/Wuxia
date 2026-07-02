@@ -12,7 +12,7 @@ import { trueRecordFor } from "../observer/true-record-service.js";
 import { regionName } from "../observer/map-state.js";
 import { aliveFigs, aliveSects, figById, sectMight, topMember } from "../observer/selectors.js";
 import { STATE } from "../state.js";
-import { cap, clamp, dual } from "../utils/random.js";
+import { cap, clamp, dual, num } from "../utils/random.js";
 import { initEntityModal, openEntity, detailSectionsHtml } from "./entity-modal.js";
 
 const $ = id=>document.getElementById(id);
@@ -115,6 +115,9 @@ export function renderPanels(){
     div.className = "sect" + (s.alive ? "" : " dead");
     div.dataset.archiveType = "factions";
     div.dataset.archiveId = s.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${s.recordName}, ${s.type}. Open dossier.`);
     div.style.setProperty("--c", al.c);
     const sameSectName = String(s.recordName).trim().toLowerCase() === String(s.name).trim().toLowerCase();
     div.innerHTML = `
@@ -151,6 +154,9 @@ export function renderPanels(){
     div.className = "figcard";
     div.dataset.archiveType = "people";
     div.dataset.archiveId = f.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${f.epithet && f.namedAt != null ? cap(f.epithet.en) : f.name}. Open dossier.`);
     div.style.setProperty("--c", al.c);
     const named = f.epithet && f.namedAt != null;
     const ambition = ambitionLabel(f.ambitions?.[0]);
@@ -165,7 +171,7 @@ export function renderPanels(){
       <div class="fig-sub">Wants: ${ambition} · Fears: ${fear}</div>
       <span class="fig-realm">${realmStageName(f.realm, f.progress)} · ${Math.round(f.progress)}%</span>
       <div class="fig-bars">
-        <span>Power <b>${Math.round(f.power)}</b></span>${bar(f.power, 1100, al.c, "Power")}
+        <span>Power <b>${num(f.power)}</b></span>${bar(f.power, 1100, al.c, "Power")}
         <span>Fame <b>${Math.round(f.fame)}</b></span>${bar(f.fame, 60, "var(--gold)", "Fame")}
         <span>Abyss <b>${Math.round(f.alignmentDrift)}</b></span>${bar(f.alignmentDrift, 100, "var(--heretical)", "Abyssal drift")}
       </div>
@@ -190,6 +196,9 @@ function renderRegions(){
     div.className = "region-card";
     div.dataset.archiveType = "regions";
     div.dataset.archiveId = region.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${region.name}, ${region.type}. Open detail.`);
     div.innerHTML = `
       <div class="region-head"><b>${region.name}</b><span>${region.type}</span></div>
       <div class="sect-meta"><span>Dominant: <b>${dominant ? dominant.recordName : "Unclaimed"}</b></span></div>
@@ -224,7 +233,7 @@ function renderDeepArchive(){
   }
 
   list.innerHTML = items.length ? items.slice(0, 36).map(item=>`
-    <div class="archive-row ${selectedArchive?.type === item.type && selectedArchive?.id === item.id ? "on" : ""}" data-archive-type="${item.type}" data-archive-id="${item.id}">
+    <div class="archive-row ${selectedArchive?.type === item.type && selectedArchive?.id === item.id ? "on" : ""}" data-archive-type="${item.type}" data-archive-id="${item.id}" tabindex="0" role="button">
       <span class="archive-type">${escapeHtml(labelForArchiveType(item.type))}</span>
       <b>${escapeHtml(item.title)}</b>
       <span>${escapeHtml(item.subtitle || "")}</span>
@@ -263,26 +272,46 @@ function bindDeepArchive(){
   }
   if(list && !list.dataset.bound){
     list.dataset.bound = "1";
-    list.addEventListener("click", e=>{
+    const handle = e=>{
       const row = e.target.closest("[data-archive-type][data-archive-id]");
       if(!row) return;
+      if(e.type === "keydown"){
+        if(e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+      }
       openEntity(row.dataset.archiveType, Number(row.dataset.archiveId));
-    });
+    };
+    list.addEventListener("click", handle);
+    list.addEventListener("keydown", handle);
   }
+}
+
+// Opens the detail modal for whichever entity an element points at.
+function openFromEl(el){
+  if(!el) return false;
+  if(el.dataset.personId) openEntity("people", Number(el.dataset.personId));
+  else if(el.dataset.factionId) openEntity("factions", Number(el.dataset.factionId));
+  else if(el.dataset.techniqueId) openEntity("techniques", Number(el.dataset.techniqueId));
+  else if(el.dataset.archiveType && el.dataset.archiveId) openEntity(el.dataset.archiveType, Number(el.dataset.archiveId));
+  else return false;
+  return true;
 }
 
 function bindArchiveEntityClicks(root){
   if(root.dataset.archiveBound) return;
   root.dataset.archiveBound = "1";
-  root.addEventListener("click", e=>{
+  const handle = e=>{
     if(e.target.closest("#archiveList,#archiveTabs,#archiveSearch")) return;
     const direct = e.target.closest("[data-person-id],[data-faction-id],[data-technique-id],[data-archive-type][data-archive-id]");
     if(!direct) return;
-    if(direct.dataset.personId) openEntity("people", Number(direct.dataset.personId));
-    else if(direct.dataset.factionId) openEntity("factions", Number(direct.dataset.factionId));
-    else if(direct.dataset.techniqueId) openEntity("techniques", Number(direct.dataset.techniqueId));
-    else if(direct.dataset.archiveType && direct.dataset.archiveId) openEntity(direct.dataset.archiveType, Number(direct.dataset.archiveId));
-  });
+    if(e.type === "keydown"){
+      if(e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+    }
+    openFromEl(direct);
+  };
+  root.addEventListener("click", handle);
+  root.addEventListener("keydown", handle);
 }
 
 function selectArchiveItem(type, id){

@@ -83,6 +83,10 @@ function render(){
   els.back.hidden = stack.length <= 1;
   els.body.innerHTML = connectionsHtml(conns) + sectionsHtml(detail);
   els.body.scrollTop = 0;
+  // Subtle fade/slide as the body content swaps (open and cross-nav).
+  if(els.body.animate){
+    els.body.animate([{opacity:0, transform:"translateY(6px)"}, {opacity:1, transform:"none"}], {duration:150, easing:"ease"});
+  }
 
   const wasOpen = !els.root.hidden;
   if(!wasOpen){
@@ -114,7 +118,7 @@ function sectionsHtml(detail){
 function connectionsHtml(conns){
   if(!conns.length) return "";
   return `<div class="emodal-conns" aria-label="Connections">${
-    conns.map(c=>`<button class="chip chip-${c.type}" data-emodal-type="${c.type}" data-emodal-id="${c.id}">${escapeHtml(c.label)}</button>`).join("")
+    conns.map(c=>`<button class="chip chip-${c.type}" data-emodal-type="${c.type}" data-emodal-id="${c.id}" title="${escapeHtml(c.label)}">${escapeHtml(c.label)}</button>`).join("")
   }</div>`;
 }
 

@@ -2,7 +2,7 @@
 
 import { realmStageName } from "../data/cultivation.js";
 import { pathLabel, qiLabel } from "../data/path-profiles.js";
-import { cap, dual } from "../utils/random.js";
+import { cap, dual, num } from "../utils/random.js";
 import { ambitionLabel, fearLabel, traitLabel } from "../entities/figure.js";
 import { familyById } from "../entities/family.js";
 import { memoryById } from "../entities/memory.js";
@@ -267,7 +267,7 @@ function factionDetail(id){
   return report(faction.recordName || faction.name, `${faction.alive ? "Active" : `Fallen in Year ${faction.deadYear}`} · ${faction.type} · ${regionName(faction.regionId)}`, [
     ["Identity", `${faction.name}\nIdeology: ${faction.ideology}\nSeat: ${locationName({regionId:faction.regionId, locationId:faction.seatId})}\nWeakness: ${faction.weakness}`],
     ["Leadership", `Leader: ${leader ? displayPerson(leader) : "None"}\nSuccessor: ${successor ? displayPerson(successor) : "None"}\nMembers: ${members.filter(member=>member.alive).length} living / ${members.length} recorded`],
-    ["Power", `Might ${Math.round(sectMight(faction))}\nPrestige ${Math.round(faction.prestige || 0)} · Wealth ${Math.round(faction.wealth || 0)} · Military ${Math.round(faction.militaryStrength || 0)} · Cultivation ${Math.round(faction.cultivationStrength || 0)} · Stability ${Math.round(faction.internalStability || 0)}`],
+    ["Power", `Might ${num(sectMight(faction))}\nPrestige ${Math.round(faction.prestige || 0)} · Wealth ${Math.round(faction.wealth || 0)} · Military ${Math.round(faction.militaryStrength || 0)} · Cultivation ${Math.round(faction.cultivationStrength || 0)} · Stability ${Math.round(faction.internalStability || 0)}`],
     ["Relations", `Allies ${faction.allies?.length || 0} · Enemies ${faction.enemies?.length || 0} · Vassals ${faction.vassals?.length || 0} · Grudges ${faction.grudges?.length || 0}`],
     ["Techniques", `${faction.signatureArt ? `${faction.signatureArt.name} (${faction.signatureArt.grade})` : "No signature art"}\nForbidden: ${(faction.forbiddenTechniques || []).join(", ") || "None recorded"}`],
     ["Recent Events", recent.map(event=>`Year ${event.year}: ${stripTags(event.publicRecord).slice(0, 130)}`).join("\n") || "No recent public events."],
