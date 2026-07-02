@@ -1,5 +1,7 @@
 "use strict";
 
+import { pathLabel } from "../data/path-profiles.js";
+import { traitLabel } from "../entities/figure.js";
 import { deriveTechnique, recordTechniqueEvent, registerTechniqueHolder, unregisterTechniqueHolder } from "../entities/technique.js";
 import { benefit, cause, effect, rumour } from "../observer/causality.js";
 import { aref, chron, ref } from "../observer/chronicle.js";
@@ -40,7 +42,7 @@ export function tickTechniqueModification(){
       regionId:creator.currentRegionId || creator.sect?.regionId || null,
       causes:[
         cause("Parent Technique", parent.name, `${aref(parent)} had grade ${parent.grade}, completeness ${Math.round(parent.completeness)}, and corruption ${Math.round(parent.corruption)}.`),
-        cause("Modifier", creator.name, `${ref(creator)} altered the manual through ${creator.personalityTraits?.[0] || "personal"} temperament and ${creator.path} cultivation.`),
+        cause("Modifier", creator.name, `${ref(creator)} altered the manual through a ${traitLabel(creator.personalityTraits?.[0]).toLowerCase()} temperament and ${pathLabel(creator.path)} cultivation.`),
         cause("Life History", "Body and memory", injuryPressure ? "Injuries forced practical changes to circulation." : "Accumulated insight made a new route possible.")
       ],
       effects:[

@@ -1,12 +1,14 @@
 "use strict";
 
+import { pathLabel } from "../data/path-profiles.js";
+import { ambitionLabel, traitLabel } from "../entities/figure.js";
 import { addMemory, rememberEvent } from "../entities/memory.js";
 import { relationshipById, upsertRelationshipPair } from "../entities/relationship.js";
 import { benefit, cause, effect, rumour } from "../observer/causality.js";
 import { chron, ref, sref } from "../observer/chronicle.js";
 import { aliveFigs, figById, warExists } from "../observer/selectors.js";
 import { STATE } from "../state.js";
-import { chance, clamp, pick, rand, ri } from "../utils/random.js";
+import { chance, clamp, dual, pick, rand, ri } from "../utils/random.js";
 import { prefersAssassination, assassinationConflictRecord } from "./assassination-system.js";
 import { duelConflictRecord } from "./duel-system.js";
 import { addInjury } from "./injury-system.js";
@@ -84,7 +86,7 @@ function publicHumiliation({actor, target, score}){
     `${ref(actor)} publicly challenges ${ref(target)}, turning an old private resentment into open humiliation.`,
     "normal",
     {
-      trueRecord:`The challenge came from stored memory pressure, not chance: grudge score ${Math.round(score)}, memory pressure ${Math.round(memoryPressureBetween(actor, target))}, ambition ${actor.ambitions?.[0] || "none"}, and temperament ${actor.personalityTraits?.[0] || "unknown"}.`,
+      trueRecord:`The challenge came from stored memory pressure, not chance: grudge score ${Math.round(score)}, memory pressure ${Math.round(memoryPressureBetween(actor, target))}, ambition ${ambitionLabel(actor.ambitions?.[0])}, and a ${traitLabel(actor.personalityTraits?.[0]).toLowerCase()} temperament.`,
       knownBy:"True Record; nearby witnesses",
       causalType:"memory",
       regionId:actor.currentRegionId || target.currentRegionId || actor.sect?.regionId || target.sect?.regionId || null,
@@ -169,7 +171,7 @@ function assassinationAttempt({actor, target, score}, killFigure){
       regionId:target.currentRegionId || actor.currentRegionId || null,
       causes:[
         cause("Memory", "Stored grievance", `${ref(actor)} had unresolved memories tied to ${ref(target)}.`),
-        cause("Method", "Assassination chosen", `${actor.path} path and ${actor.personalityTraits?.[0] || "unknown"} temperament favoured a hidden strike.`),
+        cause("Method", "Assassination chosen", `${pathLabel(actor.path)} path and a ${traitLabel(actor.personalityTraits?.[0]).toLowerCase()} temperament favoured a hidden strike.`),
         cause("Opportunity", "Target exposed", `${ref(target)} was reachable before the relationship cooled.`)
       ],
       effects:[
@@ -216,7 +218,7 @@ function startMemoryWar({actor, target, score}){
   });
   const event = chron(
     "c-war",
-    `${sref(a)} and ${sref(b)} turn private resentment into open banners: ${war.name} (${war.recordName}) begins from a grudge neither side will admit.`,
+    `${sref(a)} and ${sref(b)} turn private resentment into open banners: ${dual(war.name, war.recordName)} begins from a grudge neither side will admit.`,
     "major",
     {
       trueRecord:`The war is not random faction pressure. It escalated from ${ref(actor)} against ${ref(target)}, grudge score ${Math.round(score)}, remembered injuries, and faction honour converting private memory into public cause.`,

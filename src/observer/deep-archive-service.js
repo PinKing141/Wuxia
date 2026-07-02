@@ -1,6 +1,8 @@
 "use strict";
 
 import { realmStageName } from "../data/cultivation.js";
+import { pathLabel, qiLabel } from "../data/path-profiles.js";
+import { cap, dual, num } from "../utils/random.js";
 import { ambitionLabel, fearLabel, traitLabel } from "../entities/figure.js";
 import { familyById } from "../entities/family.js";
 import { memoryById } from "../entities/memory.js";
@@ -47,6 +49,92 @@ export function archiveItems(type="search", query=""){
 
 export function archiveCount(type="search", query=""){
   return archiveItems(type, query).length;
+}
+
+// Clickable ties between entities, used by the detail modal to let the
+// observer walk person -> sect -> rival -> technique and back.
+export function entityConnections(type, id){
+  id = Number(id);
+  const out = [];
+  const seen = new Set();
+  const add = (t, cid, label)=>{
+    cid = Number(cid);
+    if(!Number.isFinite(cid) || !label) return;
+    const key = `${t}:${cid}`;
+    if(seen.has(key) || (t === type && cid === id)) return;
+    seen.add(key);
+    out.push({type:t, id:cid, label});
+  };
+
+  if(type === "people"){
+    const p = figById(id);
+    if(!p) return out;
+    if(p.sect) add("factions", p.sect.id, `${p.sect.recordName || p.sect.name} · sect`);
+    if(p.familyId){ const fam = familyById(p.familyId); if(fam) add("bloodlines", fam.id, `${fam.name} · bloodline`); }
+    if(p.art) add("techniques", p.art.id, `${p.art.recordName || p.art.name} · technique`);
+    for(const rid of (p.relationships || [])){
+      const rel = relationshipById(rid);
+      if(!rel) continue;
+      const other = figById(rel.fromId === p.id ? rel.toId : rel.fromId);
+      if(other) add("people", other.id, `${displayPerson(other)} · ${relationshipLabel(rel)}`);
+    }
+    for(const did of (p.discipleIds || [])){ const d = figById(did); if(d) add("people", d.id, `${displayPerson(d)} · disciple`); }
+  } else if(type === "factions"){
+    const f = STATE.sects.find(s=>s.id === id);
+    if(!f) return out;
+    if(f.leaderId){ const l = figById(f.leaderId); if(l) add("people", l.id, `${displayPerson(l)} · leader`); }
+    if(f.successorId){ const s = figById(f.successorId); if(s) add("people", s.id, `${displayPerson(s)} · successor`); }
+    (f.members || []).map(figById).filter(m=>m && m.alive).sort((a, b)=>(b.power || 0) - (a.power || 0)).slice(0, 6).forEach(m=>add("people", m.id, displayPerson(m)));
+    if(f.regionId != null){ const r = regionById(f.regionId); if(r) add("regions", r.id, `${r.name} · region`); }
+    if(f.signatureArt) add("techniques", f.signatureArt.id, `${f.signatureArt.recordName || f.signatureArt.name} · signature art`);
+    resolveFactionRefs(f.allies).slice(0, 4).forEach(a=>add("factions", a.id, `${a.recordName || a.name} · ally`));
+    resolveFactionRefs(f.enemies).slice(0, 4).forEach(a=>add("factions", a.id, `${a.recordName || a.name} · enemy`));
+  } else if(type === "techniques"){
+    const t = STATE.arts.find(a=>a.id === id);
+    if(!t) return out;
+    if(t.creatorId){ const c = figById(t.creatorId); if(c) add("people", c.id, `${displayPerson(c)} · creator`); }
+    if(t.originFactionId != null){ const of = STATE.sects.find(s=>s.id === t.originFactionId); if(of) add("factions", of.id, `${of.recordName || of.name} · origin`); }
+    (t.currentHolderIds || []).map(figById).filter(Boolean).slice(0, 6).forEach(h=>add("people", h.id, displayPerson(h)));
+    (t.parentTechniqueIds || []).map(pid=>STATE.arts.find(a=>a.id === pid)).filter(Boolean).forEach(pt=>add("techniques", pt.id, `${pt.recordName || pt.name} · parent`));
+    (t.childTechniqueIds || []).map(cid=>STATE.arts.find(a=>a.id === cid)).filter(Boolean).slice(0, 6).forEach(ct=>add("techniques", ct.id, `${ct.recordName || ct.name} · branch`));
+  } else if(type === "wars"){
+    const w = (STATE.wars || []).find(x=>x.id === id);
+    const rep = w ? warReport(w) : null;
+    if(rep){
+      [...(rep.factions?.sideA || []), ...(rep.factions?.sideB || [])].forEach(fx=>fx && add("factions", fx.id, fx.recordName || fx.name));
+      if(rep.mainAggressor) add("factions", rep.mainAggressor.id, `${rep.mainAggressor.recordName || rep.mainAggressor.name} · aggressor`);
+    }
+  } else if(type === "events"){
+    const e = STATE.log.find(x=>x.id === id);
+    if(!e) return out;
+    (e.involvedPersonIds || []).map(figById).filter(Boolean).forEach(p=>add("people", p.id, displayPerson(p)));
+    (e.involvedFactionIds || []).forEach(fid=>{ const f = STATE.sects.find(s=>s.id === fid); if(f) add("factions", f.id, f.recordName || f.name); });
+    (e.involvedTechniqueIds || []).forEach(tid=>{ const t = STATE.arts.find(a=>a.id === tid); if(t) add("techniques", t.id, t.recordName || t.name); });
+  } else if(type === "regions"){
+    const r = regionById(id);
+    if(!r) return out;
+    if(r.dominantFactionId != null){ const f = STATE.sects.find(s=>s.id === r.dominantFactionId); if(f) add("factions", f.id, `${f.recordName || f.name} · dominant`); }
+    STATE.sects.filter(s=>s.regionId === id && s.alive).slice(0, 6).forEach(s=>add("factions", s.id, s.recordName || s.name));
+  } else if(type === "relationships"){
+    const rel = relationshipById(id);
+    if(!rel) return out;
+    const a = figById(rel.fromId), b = figById(rel.toId);
+    if(a) add("people", a.id, displayPerson(a));
+    if(b) add("people", b.id, displayPerson(b));
+  } else if(type === "bloodlines"){
+    const fam = familyById(id);
+    if(!fam) return out;
+    (fam.memberIds || []).map(figById).filter(Boolean).sort((a, b)=>(b.power || 0) - (a.power || 0)).slice(0, 8).forEach(m=>add("people", m.id, displayPerson(m)));
+    (fam.factionIds || []).forEach(fid=>{ const f = STATE.sects.find(s=>s.id === fid); if(f) add("factions", f.id, f.recordName || f.name); });
+  }
+  return out;
+}
+
+function resolveFactionRefs(list){
+  return (list || []).map(entry=>{
+    const fid = entry && typeof entry === "object" ? (entry.id ?? entry.factionId ?? entry.sectId) : entry;
+    return STATE.sects.find(s=>s.id === Number(fid));
+  }).filter(Boolean);
 }
 
 export function archiveDetail(type, id){
@@ -160,9 +248,9 @@ function personDetail(id){
   const family = familyById(person.familyId);
   return report(displayPerson(person), `${person.alive ? "Alive" : `Dead in Year ${person.diedYear}`} · ${realmStageName(person.realm, person.progress, true)}`, [
     ["Identity", `${person.publicIdentity || "Unrecorded public identity"}\nHidden: ${person.hiddenIdentity || "No hidden identity recorded"}\nFamily: ${family?.name || "Unrecorded"}\nOrigin: ${regionName(person.birthplaceRegionId)}\nLocation: ${regionName(person.currentRegionId)}`],
-    ["Cultivation", `${person.path} path · ${person.qiType} qi\nFoundation ${Math.round(person.foundationQuality || 0)} · Qi purity ${Math.round(person.qiPurity || 0)} · Mental state ${Math.round(person.mentalState || 0)}\nTalent ${Math.round(person.cultivationTalent || 0)} · Comprehension ${Math.round(person.comprehension || 0)} · Combat instinct ${Math.round(person.combatInstinct || 0)}`],
+    ["Cultivation", `${pathLabel(person.path)} path · ${qiLabel(person.qiType)}\nFoundation ${Math.round(person.foundationQuality || 0)} · Qi purity ${Math.round(person.qiPurity || 0)} · Mental state ${Math.round(person.mentalState || 0)}\nTalent ${Math.round(person.cultivationTalent || 0)} · Comprehension ${Math.round(person.comprehension || 0)} · Combat instinct ${Math.round(person.combatInstinct || 0)}`],
     ["Character", `Traits: ${(person.personalityTraits || []).map(traitLabel).join(", ")}\nAmbition: ${(person.ambitions || []).map(ambitionLabel).join(", ")}\nFear: ${(person.fears || []).map(fearLabel).join(", ")}`],
-    ["Technique", person.art ? `${person.art.name} (${person.art.recordName})\n${person.art.grade} ${person.art.type} · ${person.art.path} · ${person.art.qiType}` : "No signature technique recorded."],
+    ["Technique", person.art ? `${dual(person.art.name, person.art.recordName)}\n${person.art.grade} ${person.art.type} · ${pathLabel(person.art.path)} · ${qiLabel(person.art.qiType)}` : "No signature technique recorded."],
     ["Relationships", bonds.length ? bonds.map(bond=>`${bond.otherName}: ${bond.type}, heat ${Math.round(relationshipHeat(bond))}`).join("\n") : "No strong bonds recorded."],
     ["Memories", (person.memories || []).slice(-8).map(memoryById).filter(Boolean).map(memory=>`${memory.year || "Year ?"} · ${memory.type}: ${memory.text || memory.note || ""}`).join("\n") || "No memories recorded."],
     ["Likely Future", likelyFutureFor(person)]
@@ -179,7 +267,7 @@ function factionDetail(id){
   return report(faction.recordName || faction.name, `${faction.alive ? "Active" : `Fallen in Year ${faction.deadYear}`} · ${faction.type} · ${regionName(faction.regionId)}`, [
     ["Identity", `${faction.name}\nIdeology: ${faction.ideology}\nSeat: ${locationName({regionId:faction.regionId, locationId:faction.seatId})}\nWeakness: ${faction.weakness}`],
     ["Leadership", `Leader: ${leader ? displayPerson(leader) : "None"}\nSuccessor: ${successor ? displayPerson(successor) : "None"}\nMembers: ${members.filter(member=>member.alive).length} living / ${members.length} recorded`],
-    ["Power", `Might ${Math.round(sectMight(faction))}\nPrestige ${Math.round(faction.prestige || 0)} · Wealth ${Math.round(faction.wealth || 0)} · Military ${Math.round(faction.militaryStrength || 0)} · Cultivation ${Math.round(faction.cultivationStrength || 0)} · Stability ${Math.round(faction.internalStability || 0)}`],
+    ["Power", `Might ${num(sectMight(faction))}\nPrestige ${Math.round(faction.prestige || 0)} · Wealth ${Math.round(faction.wealth || 0)} · Military ${Math.round(faction.militaryStrength || 0)} · Cultivation ${Math.round(faction.cultivationStrength || 0)} · Stability ${Math.round(faction.internalStability || 0)}`],
     ["Relations", `Allies ${faction.allies?.length || 0} · Enemies ${faction.enemies?.length || 0} · Vassals ${faction.vassals?.length || 0} · Grudges ${faction.grudges?.length || 0}`],
     ["Techniques", `${faction.signatureArt ? `${faction.signatureArt.name} (${faction.signatureArt.grade})` : "No signature art"}\nForbidden: ${(faction.forbiddenTechniques || []).join(", ") || "None recorded"}`],
     ["Recent Events", recent.map(event=>`Year ${event.year}: ${stripTags(event.publicRecord).slice(0, 130)}`).join("\n") || "No recent public events."],
@@ -193,7 +281,7 @@ function techniqueDetail(id){
   const lineage = techniqueLineageReport(technique);
   const tree = techniqueLineageTree(technique);
   return report(lineage.recordName || lineage.name, `${lineage.grade} ${lineage.type} · ${lineage.lost ? "Lost" : lineage.dormant ? "Dormant" : "Living"}`, [
-    ["Identity", `${lineage.name}\nPath: ${lineage.path} · Qi: ${lineage.qiType}\nCreator: ${lineage.creator || "Unknown"}\nOrigin: ${lineage.originFaction || "Unclaimed"}`],
+    ["Identity", `${lineage.name}\nPath: ${pathLabel(lineage.path)} · Qi: ${qiLabel(lineage.qiType)}\nCreator: ${lineage.creator || "Unknown"}\nOrigin: ${lineage.originFaction || "Unclaimed"}`],
     ["Holders", `Current: ${lineage.currentHolders.join(", ") || "None"}\nPast: ${lineage.pastHolders.slice(0, 8).join(", ") || "None recorded"}`],
     ["Risks And Counters", `Risks: ${lineage.risks.join(", ") || "None recorded"}\nCounters: ${lineage.counters.join(", ") || "None recorded"}\nCompleteness: ${lineage.completeness}% · Forbidden ${lineage.forbidden ? "yes" : "no"} · Damaged ${lineage.damaged ? "yes" : "no"}`],
     ["Branches", tree.map(row=>`${"  ".repeat(row.depth)}${row.name} · ${row.grade} ${row.type}`).join("\n") || "No branch tree recorded."],
@@ -288,7 +376,7 @@ function report(title, subtitle, sections){
 
 function displayPerson(person){
   if(!person) return "Unknown";
-  return person.epithet && person.namedAt != null ? `${person.epithet.en} (${person.epithet.recordName})` : person.name;
+  return person.epithet && person.namedAt != null ? dual(cap(person.epithet.en), person.epithet.recordName) : person.name;
 }
 
 function namePerson(id){

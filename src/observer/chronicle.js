@@ -4,12 +4,12 @@ import { makeChronicleEvent } from "../entities/chronicle-event.js";
 import { registerChronicleEvent } from "../simulation/chronicle-system.js";
 import { registerEventRumour } from "../simulation/rumour-system.js";
 import { STATE } from "../state.js";
-import { cap } from "../utils/random.js";
+import { cap, dual } from "../utils/random.js";
 import { locationName, noteRegionEvent } from "./map-state.js";
 
 export function ref(f){
   if(!f) return "an unknown";
-  if(f.epithet && f.namedAt != null) return `<span class="nm" data-person-id="${f.id}">${cap(f.epithet.en)} (${f.epithet.recordName})</span>`;
+  if(f.epithet && f.namedAt != null) return `<span class="nm" data-person-id="${f.id}">${dual(cap(f.epithet.en), f.epithet.recordName)}</span>`;
   return `<span class="nm" data-person-id="${f.id}">${f.name}</span>`;
 }
 
@@ -18,11 +18,11 @@ export function plainRef(f){
 }
 
 export function sref(s){
-  return s ? `<span class="sn" data-faction-id="${s.id}">${s.name} (${s.recordName})</span>` : "a vanished house";
+  return s ? `<span class="sn" data-faction-id="${s.id}">${dual(s.name, s.recordName)}</span>` : "a vanished house";
 }
 
 export function aref(a){
-  return a ? `<em class="art" data-technique-id="${a.id}">${a.name} (${a.recordName})</em>` : "a forgotten art";
+  return a ? `<em class="art" data-technique-id="${a.id}">${dual(a.name, a.recordName)}</em>` : "a forgotten art";
 }
 
 export function chron(cls, publicRecord, level, variants={}){

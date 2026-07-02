@@ -12,7 +12,8 @@ import { trueRecordFor } from "../observer/true-record-service.js";
 import { regionName } from "../observer/map-state.js";
 import { aliveFigs, aliveSects, figById, sectMight, topMember } from "../observer/selectors.js";
 import { STATE } from "../state.js";
-import { cap, clamp } from "../utils/random.js";
+import { cap, clamp, dual, num } from "../utils/random.js";
+import { initEntityModal, openEntity, detailSectionsHtml } from "./entity-modal.js";
 
 const $ = id=>document.getElementById(id);
 let autoScroll = true;
@@ -69,8 +70,19 @@ export function renderLog(force=false){
   renderDeepArchive();
 }
 
-function bar(v, max, color){
-  return `<div class="mini"><i style="width:${clamp(v / max * 100, 0, 100)}%;background:${color}"></i></div>`;
+function bar(v, max, color, label){
+  const title = label ? `${label}: ${Math.round(v)}` : `${Math.round(v)}`;
+  return `<div class="mini" title="${title}"><i style="width:${clamp(v / max * 100, 0, 100)}%;background:${color}"></i></div>`;
+}
+
+// In-world phrasing for goal progress, instead of a gamey percentage.
+function progressWord(pct){
+  const p = Math.round(pct || 0);
+  if(p >= 90) return "all but achieved";
+  if(p >= 70) return "close at hand";
+  if(p >= 45) return "well underway";
+  if(p >= 20) return "taking shape";
+  return "barely begun";
 }
 
 export function renderPanels(){
@@ -98,24 +110,28 @@ export function renderPanels(){
     const lead = topMember(s);
     const leader = figById(s.leaderId) || lead;
     const successor = figById(s.successorId);
-    const goals = (s.currentGoals || []).slice(0,2).map(goal=>`${goal.label} ${Math.round(goal.progress || 0)}%`).join(" · ") || "No formal goal";
+    const goals = (s.currentGoals || []).slice(0,2).map(goal=>`${goal.label} <i class="prog">(${progressWord(goal.progress)})</i>`).join(" · ") || "No formal goal";
     const div = document.createElement("div");
     div.className = "sect" + (s.alive ? "" : " dead");
     div.dataset.archiveType = "factions";
     div.dataset.archiveId = s.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${s.recordName}, ${s.type}. Open dossier.`);
     div.style.setProperty("--c", al.c);
+    const sameSectName = String(s.recordName).trim().toLowerCase() === String(s.name).trim().toLowerCase();
     div.innerHTML = `
       <div class="sect-head">
-        <div class="sect-name">${s.recordName}<span class="en">${s.name}</span></div>
+        <div class="sect-name">${s.recordName}${sameSectName ? "" : `<span class="en">${s.name}</span>`}</div>
         <div class="sect-tier">${s.type} · ${al.recordLabel}</div>
       </div>
       <div class="sect-meta">
         <span><b>${living.length}</b> disciples</span>
         <span>${regionName(s.regionId)}</span>
       </div>
-      <div class="sect-meta"><span>${s.ideology || "mixed Jianghu policy"}</span></div>
+      <div class="sect-meta"><span>${cap(s.ideology || "mixed Jianghu policy")}</span></div>
       <div class="sect-meta"><span>${s.paths.map(pathLabel).join(", ")} · ${s.qiTypes.map(qiLabel).join(", ")}</span></div>
-      <div class="sect-meta"><span>Weakness: <b>${s.weakness}</b></span></div>
+      <div class="sect-meta"><span>Weakness: <b>${s.weakness ? cap(s.weakness) : "None recorded"}</b></span></div>
       ${leader ? `<div class="sect-meta"><span>Leader: <b>${leader.epithet && leader.namedAt != null ? cap(leader.epithet.en) : leader.name}</b> · ${realmStageName(leader.realm, leader.progress, true)}</span></div>` : ""}
       ${successor ? `<div class="sect-meta"><span>Successor: <b>${successor.epithet && successor.namedAt != null ? cap(successor.epithet.en) : successor.name}</b></span></div>` : ""}
       <div class="sect-meta"><span>Goal: ${goals}</span></div>
@@ -125,6 +141,7 @@ export function renderPanels(){
     `;
     sl.appendChild(div);
   }
+  if(!sl.children.length) sl.innerHTML = `<div class="empty-record">No powers yet stand recorded beneath Heaven.</div>`;
 
   const fl = $("figlist");
   const figs = aliveFigs().sort((a, b)=>(b.isThreat - a.isThreat) || (b.power - a.power)).slice(0,12);
@@ -137,36 +154,34 @@ export function renderPanels(){
     div.className = "figcard";
     div.dataset.archiveType = "people";
     div.dataset.archiveId = f.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${f.epithet && f.namedAt != null ? cap(f.epithet.en) : f.name}. Open dossier.`);
     div.style.setProperty("--c", al.c);
     const named = f.epithet && f.namedAt != null;
-    const traits = (f.personalityTraits || []).slice(0,2).map(traitLabel).join(", ") || "Unrecorded";
     const ambition = ambitionLabel(f.ambitions?.[0]);
     const fear = fearLabel(f.fears?.[0]);
     const gender = f.gender ? f.gender[0].toUpperCase() + f.gender.slice(1) : "Unknown";
     const hotBond = relationshipReportFor(f)[0];
-    const artReport = f.art ? techniqueLineageReport(f.art) : null;
     div.innerHTML = `
-      <div class="fig-name">${named ? `<span class="fig-alias">${cap(f.epithet.en)} · ${f.epithet.recordName}</span>` : f.name}</div>
-      <div class="fig-sub">${named ? f.name + " · " : ""}${al.label}${f.isThreat ? ` · <span style="color:var(--blood)">SON OF THE ABYSS</span>` : ""}${f.sect ? " · " + f.sect.name : " · wanderer"}</div>
-      <div class="fig-sub">${gender} · ${f.publicIdentity || f.rankInFaction || "Unrecorded identity"}</div>
-      <div class="fig-sub">${pathLabel(f.path)} · ${qiLabel(f.qiType)} · ${regionName(f.currentRegionId)}</div>
-      <div class="fig-sub">Traits: ${traits}</div>
+      <div class="fig-name">${named ? `<span class="fig-alias">${dual(cap(f.epithet.en), f.epithet.recordName)}</span>` : f.name}</div>
+      <div class="fig-sub">${named ? f.name + " · " : ""}${al.label}${f.isThreat ? ` · <span style="color:var(--blood)">SON OF THE ABYSS</span>` : ""}${f.sect ? " · " + f.sect.name : " · Wanderer"}</div>
+      <div class="fig-sub">${gender} · ${cap(f.publicIdentity || f.rankInFaction || "Unrecorded identity")} · ${regionName(f.currentRegionId)}</div>
+      <div class="fig-sub">${pathLabel(f.path)} · ${qiLabel(f.qiType)}</div>
       <div class="fig-sub">Wants: ${ambition} · Fears: ${fear}</div>
-      <div class="fig-sub">Foundation ${Math.round(f.foundationQuality || 0)} · Qi ${Math.round(f.qiPurity || 0)} · Mind ${Math.round(f.mentalState || 0)} · Resources ${Math.round(f.resources || 0)}</div>
       <span class="fig-realm">${realmStageName(f.realm, f.progress)} · ${Math.round(f.progress)}%</span>
       <div class="fig-bars">
-        <span>Power</span>${bar(f.power, 1100, al.c)}
-        <span>Fame</span>${bar(f.fame, 60, "var(--gold)")}
-        <span>Abyss</span>${bar(f.alignmentDrift, 100, "var(--heretical)")}
+        <span>Power <b>${num(f.power)}</b></span>${bar(f.power, 1100, al.c, "Power")}
+        <span>Fame <b>${Math.round(f.fame)}</b></span>${bar(f.fame, 60, "var(--gold)", "Fame")}
+        <span>Abyss <b>${Math.round(f.alignmentDrift)}</b></span>${bar(f.alignmentDrift, 100, "var(--heretical)", "Abyssal drift")}
       </div>
-      <div class="fig-sub">Reputation: ${f.reputation?.label || "obscure"} · Pill toxicity ${Math.round(f.pillToxicity || 0)} · Inner demon ${Math.round(f.innerDemon || 0)} · Injuries ${f.injuries?.length || 0}</div>
-      <div class="fig-sub">Memories ${f.memories?.length || 0} · Bonds ${f.relationships?.length || 0} · Breakthrough records ${f.breakthroughHistory?.length || 0}</div>
-      ${hotBond ? `<div class="fig-sub">Strongest bond: ${hotBond.otherName} · ${hotBond.type} · heat ${Math.round(relationshipHeat(hotBond))}</div>` : ""}
-      ${f.art ? `<div class="fig-sub" style="margin-top:6px">${f.art.name} (${f.art.recordName}) · ${f.art.grade} ${f.art.type} · tier ${f.art.tier} · ${pathLabel(f.art.path)} · ${qiLabel(f.art.qiType)}</div>` : ""}
-      ${artReport ? `<div class="fig-sub">Technique lineage: holders ${artReport.currentHolders.length} · past ${artReport.pastHolders.length} · branches ${artReport.childTechniques.length} · history ${artReport.history.length}</div>` : ""}
+      ${hotBond ? `<div class="fig-sub">Strongest bond: ${hotBond.otherName} · ${hotBond.type}</div>` : ""}
+      ${f.art ? `<div class="fig-sub art-line">${dual(f.art.name, f.art.recordName)} · ${f.art.grade} ${f.art.type}</div>` : ""}
+      <div class="fig-more">Open dossier →</div>
     `;
     fl.appendChild(div);
   }
+  if(!fl.children.length) fl.innerHTML = `<div class="empty-record">No cultivators of note walk the land yet.</div>`;
 }
 
 function renderRegions(){
@@ -181,15 +196,18 @@ function renderRegions(){
     div.className = "region-card";
     div.dataset.archiveType = "regions";
     div.dataset.archiveId = region.id;
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.setAttribute("aria-label", `${region.name}, ${region.type}. Open detail.`);
     div.innerHTML = `
       <div class="region-head"><b>${region.name}</b><span>${region.type}</span></div>
-      <div class="sect-meta"><span>Dominant: <b>${dominant ? dominant.recordName : "unclaimed"}</b></span></div>
-      <div class="sect-meta"><span>Known for: ${region.knownFor.slice(0,3).join(", ")}</span></div>
+      <div class="sect-meta"><span>Dominant: <b>${dominant ? dominant.recordName : "Unclaimed"}</b></span></div>
+      <div class="sect-meta"><span>Known for: ${region.knownFor.slice(0,3).map(cap).join(", ")}</span></div>
       <div class="region-bars">
-        <span>Stable</span>${bar(region.stability, 100, "var(--jade)")}
-        <span>Danger</span>${bar(region.danger, 100, "var(--blood)")}
-        <span>Spirit</span>${bar(region.spiritualDensity, 100, "var(--azure)")}
-        <span>Demonic</span>${bar(region.demonicActivity, 100, "var(--heretical)")}
+        <span>Stable <b>${Math.round(region.stability)}</b></span>${bar(region.stability, 100, "var(--jade)", "Stability")}
+        <span>Danger <b>${Math.round(region.danger)}</b></span>${bar(region.danger, 100, "var(--blood)", "Danger")}
+        <span>Spirit <b>${Math.round(region.spiritualDensity)}</b></span>${bar(region.spiritualDensity, 100, "var(--azure)", "Spiritual density")}
+        <span>Demonic <b>${Math.round(region.demonicActivity)}</b></span>${bar(region.demonicActivity, 100, "var(--heretical)", "Demonic activity")}
       </div>
     `;
     list.appendChild(div);
@@ -215,7 +233,7 @@ function renderDeepArchive(){
   }
 
   list.innerHTML = items.length ? items.slice(0, 36).map(item=>`
-    <div class="archive-row ${selectedArchive?.type === item.type && selectedArchive?.id === item.id ? "on" : ""}" data-archive-type="${item.type}" data-archive-id="${item.id}">
+    <div class="archive-row ${selectedArchive?.type === item.type && selectedArchive?.id === item.id ? "on" : ""}" data-archive-type="${item.type}" data-archive-id="${item.id}" tabindex="0" role="button">
       <span class="archive-type">${escapeHtml(labelForArchiveType(item.type))}</span>
       <b>${escapeHtml(item.title)}</b>
       <span>${escapeHtml(item.subtitle || "")}</span>
@@ -227,16 +245,7 @@ function renderDeepArchive(){
 }
 
 function renderArchiveDetail(detail){
-  return `
-    <h3>${escapeHtml(detail.title)}</h3>
-    <div class="sub">${escapeHtml(detail.subtitle || "")}</div>
-    ${detail.sections.map(section=>`
-      <div class="archive-section">
-        <b>${escapeHtml(section.label)}</b>
-        <pre>${escapeHtml(section.body || "")}</pre>
-      </div>
-    `).join("")}
-  `;
+  return detailSectionsHtml(detail);
 }
 
 function bindDeepArchive(){
@@ -263,34 +272,63 @@ function bindDeepArchive(){
   }
   if(list && !list.dataset.bound){
     list.dataset.bound = "1";
-    list.addEventListener("click", e=>{
+    const handle = e=>{
       const row = e.target.closest("[data-archive-type][data-archive-id]");
       if(!row) return;
-      selectArchiveItem(row.dataset.archiveType, Number(row.dataset.archiveId), false);
-    });
+      if(e.type === "keydown"){
+        if(e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+      }
+      openEntity(row.dataset.archiveType, Number(row.dataset.archiveId));
+    };
+    list.addEventListener("click", handle);
+    list.addEventListener("keydown", handle);
   }
+}
+
+// Opens the detail modal for whichever entity an element points at.
+function openFromEl(el){
+  if(!el) return false;
+  if(el.dataset.personId) openEntity("people", Number(el.dataset.personId));
+  else if(el.dataset.factionId) openEntity("factions", Number(el.dataset.factionId));
+  else if(el.dataset.techniqueId) openEntity("techniques", Number(el.dataset.techniqueId));
+  else if(el.dataset.archiveType && el.dataset.archiveId) openEntity(el.dataset.archiveType, Number(el.dataset.archiveId));
+  else return false;
+  return true;
 }
 
 function bindArchiveEntityClicks(root){
   if(root.dataset.archiveBound) return;
   root.dataset.archiveBound = "1";
-  root.addEventListener("click", e=>{
+  const handle = e=>{
     if(e.target.closest("#archiveList,#archiveTabs,#archiveSearch")) return;
     const direct = e.target.closest("[data-person-id],[data-faction-id],[data-technique-id],[data-archive-type][data-archive-id]");
     if(!direct) return;
-    if(direct.dataset.personId) selectArchiveItem("people", Number(direct.dataset.personId), true);
-    else if(direct.dataset.factionId) selectArchiveItem("factions", Number(direct.dataset.factionId), true);
-    else if(direct.dataset.techniqueId) selectArchiveItem("techniques", Number(direct.dataset.techniqueId), true);
-    else if(direct.dataset.archiveType && direct.dataset.archiveId) selectArchiveItem(direct.dataset.archiveType, Number(direct.dataset.archiveId), true);
-  });
+    if(e.type === "keydown"){
+      if(e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+    }
+    openFromEl(direct);
+  };
+  root.addEventListener("click", handle);
+  root.addEventListener("keydown", handle);
 }
 
-function selectArchiveItem(type, id, switchTab){
+function selectArchiveItem(type, id){
+  openEntity(type, Number(id));
+}
+
+// Keeps the sidebar archive + Fate Record + chronicle highlight in step with
+// whatever the modal is currently showing (fired on open and on cross-nav).
+function syncDetailSelection(type, id){
   selectedArchive = {type, id};
-  if(switchTab) activeArchive = type;
-  if(type === "events") selectedEventId = id;
-  renderDeepArchive();
+  if(type === "events"){
+    selectedEventId = id;
+    const chron = $("chron");
+    if(chron) [...chron.querySelectorAll(".entry")].forEach(node=>node.classList.toggle("selected", Number(node.dataset.eventId) === id));
+  }
   renderFateRecord();
+  renderDeepArchive();
 }
 
 function labelForArchiveType(type){
@@ -307,22 +345,13 @@ function qiLabel(qiType){
 
 export function bindChronicleScroll(){
   const chron = $("chron");
+  initEntityModal({onNavigate:syncDetailSelection});
   bindDeepArchive();
   bindArchiveEntityClicks(document.body);
   chron.addEventListener("scroll", e=>{
     const box = e.target;
     autoScroll = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
-    $("fnote").textContent = autoScroll ? "The brush records all. Scroll up to read the past." : "Reading the past - scroll to the bottom to follow the present.";
-  });
-  chron.addEventListener("click", e=>{
-    const entry = e.target.closest(".entry");
-    if(!entry || !entry.dataset.eventId) return;
-    selectedEventId = Number(entry.dataset.eventId);
-    selectedArchive = {type:"events", id:selectedEventId};
-    activeArchive = "events";
-    [...chron.querySelectorAll(".entry")].forEach(node=>node.classList.toggle("selected", node === entry));
-    renderFateRecord();
-    renderDeepArchive();
+    $("fnote").textContent = autoScroll ? "The brush records all. Scroll up to read the past." : "Reading the past — scroll to the bottom to follow the present.";
   });
 }
 
